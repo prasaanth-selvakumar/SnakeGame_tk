@@ -78,12 +78,13 @@ class Board:
         return True
 
     def game_over(self):
+        global game_status
+        game_status = 0
         canvas.delete("snake_body")
         canvas.delete("food")
         canvas.create_text(window.winfo_width() // 2,
                            window.winfo_height() // 2,
-                           text=f"Game Over\nScore: {score}", fill="#770000", font=("consolas", 30))
-
+                           text=f"Game Over\nScore: {score}", fill="#770000", font=("consolas", 30), tags="game_over")
 
 
 def next_turn(board):
@@ -96,7 +97,12 @@ def next_turn(board):
         x -= 1
     else:
         x += 1
-    update_turn = board.update_snake_pos([x % BOARD_SIZE, y % BOARD_SIZE])
+    # updating condition to make boundaries as walls
+    if x >= BOARD_SIZE or y >= BOARD_SIZE or x<0 or y<0:
+        update_turn = False
+        board.game_over()
+    else:
+        update_turn = board.update_snake_pos([x, y])
     if update_turn:
         window.after(GAME_SPEED, next_turn, board)
 
@@ -116,13 +122,25 @@ def change_direction(new_direction):
             pass
 
 
+def reset_game(arg):
+    global game_status, cur_dir, score
+    if(game_status==0):
+        game_status = 1
+        score = 0
+        label.config(text=f"Score: {score}")
+        canvas.delete("game_over")
+        board = Board(BOARD_SIZE)
+        cur_dir = "down"
+        next_turn(board)
+
+
+
 cur_dir = "down"
 window = tk.Tk()
-
 window.title("Snake Game - Trial1")
-
 # Track scores throughout the game
 score = 0
+game_status = 0
 
 label = tk.Label(window, text=f"Score: {score}",
                  font=("consolas", 30))
@@ -137,6 +155,7 @@ window.bind("<Left>", lambda x: change_direction('left'))
 window.bind("<Right>", lambda x: change_direction('right'))
 window.bind("<Up>", lambda x: change_direction('up'))
 window.bind("<Down>", lambda x: change_direction('down'))
-board = Board(BOARD_SIZE)
-next_turn(board)
+window.bind("<Return>", reset_game)
+
+reset_game("")
 window.mainloop()
